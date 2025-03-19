@@ -20,7 +20,7 @@ export const verifyRefreshToken = async (req, res, next) => {
             );
 
             const newAccessToken = await generateAccessToken({
-                email: currentUser.email,
+                username: currentUser.username,
                 id: currentUser._id,
                 role: currentUser.role,
             });

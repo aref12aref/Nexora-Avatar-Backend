@@ -1,21 +1,11 @@
 import mongoose from "mongoose";
-import validator from "validator";
 import { userRoles } from "../utils/userRols.js";
 
 const UsersSchema = mongoose.Schema({
     username: {
         type: String,
         required: true,
-    },
-    email: {
-        type: String,
-        required: true,
         unique: true,
-        validate: [validator.isEmail, "field must be a valid email address"],
-    },
-    password: {
-        type: String,
-        required: true,
     },
     role: {
         type: String,

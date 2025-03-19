@@ -57,16 +57,14 @@ export const getOneUser = asyncWrapper(async (req, res) => {
 
 //create user
 export const createUser = asyncWrapper(async (req, res) => {
-    const { username, email, password, role } = req.body;
+    const { username, role } = req.body;
 
-    const oldUser = await User.findOne({ email: email });
+    const oldUser = await User.findOne({ username: username });
     if (oldUser) {
         return res
             .status(400)
             .json(httpResponse.badResponse(400, "user already exists"));
     }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
 
     const activities = await Activity.find({});
 
@@ -87,20 +85,18 @@ export const createUser = asyncWrapper(async (req, res) => {
 
     const newUser = new User({
         username,
-        email,
-        password: hashedPassword,
         role,
         achievments: achievments,
     });
 
     const token = await generateToken.generateAccessToken({
-        email: newUser.email,
+        username: newUser.username,
         id: newUser._id,
         role: newUser.role,
     });
 
     const refreshToken = await generateToken.generateRefreshToken({
-        email: newUser.email,
+        username: newUser.username,
         id: newUser._id,
         role: newUser.role,
     });
@@ -169,27 +165,6 @@ export const editUser = asyncWrapper(async (req, res) => {
         }
     }
 
-    if (req.body.email) {
-        const newEmail = req.body.email;
-        if (req.currentUser.email === oldUser.email) {
-            oldUser.email = newEmail;
-        }
-    }
-
-    if (req.body.password) {
-        if (req.currentUser.email === oldUser.email) {
-            const newPassword = req.body.password;
-            const matchedPassord = await bcrypt.compare(
-                newPassword,
-                oldUser.password
-            );
-            if (!matchedPassord) {
-                const hashedPassword = await bcrypt.hash(newPassword, 10);
-                oldUser.password = hashedPassword;
-            }
-        }
-    }
-
     if (req.body.role) {
         const newRole = req.body.role;
 
@@ -212,8 +187,6 @@ export const editUser = asyncWrapper(async (req, res) => {
     const user = await User.findByIdAndUpdate(userID, {
         $set: {
             username: oldUser.username,
-            email: oldUser.email,
-            password: oldUser.password,
             role: oldUser.role,
         },
     });

@@ -5,7 +5,6 @@ import * as userControlers from "../Controllers/usersCotrolers.js";
 //middlewares
 import { verifyToken } from "../middlewares/verifyToken.js";
 import { verifyRefreshToken } from "../middlewares/verifyRefreshToken.js";
-import { verifyEmail } from "../middlewares/verifyEmail.js";
 //utils
 import { allowedTo } from "../middlewares/allowedTo.js";
 import { userRoles } from "../utils/userRols.js";
@@ -25,7 +24,6 @@ router
         verifyToken,
         verifyRefreshToken,
         allowedTo(userRoles.ADMIN),
-        verifyEmail,
         userControlers.createUser
     );
 

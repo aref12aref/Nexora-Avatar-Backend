@@ -1,5 +1,3 @@
-//modules
-import bcrypt from "bcryptjs";
 //models
 import { User } from "../Models/usersModel.js";
 import { Activity } from "../Models/activitiesModel.js";
@@ -12,22 +10,20 @@ import * as generateToken from "../utils/generateJWT.js";
 
 //register
 export const register = asyncWrapper(async (req, res) => {
-    const { username, email, password } = req.body;
+    const { username } = req.body;
 
-    if (!username || !email || !password) {
+    if (!username) {
         return res
             .status(400)
             .json(httpResponse.badResponse(400, "data missing"));
     }
 
-    const oldUser = await User.findOne({ email: email });
+    const oldUser = await User.findOne({ username: username });
     if (oldUser) {
         return res
             .status(400)
             .json(httpResponse.badResponse(400, "user already exists"));
     }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
 
     const activities = await Activity.find({});
 
@@ -48,19 +44,17 @@ export const register = asyncWrapper(async (req, res) => {
 
     let newUser = new User({
         username,
-        email,
-        password: hashedPassword,
         achievments: achievments,
     });
 
     const accessToken = await generateToken.generateAccessToken({
-        email: newUser.email,
+        username: newUser.username,
         id: newUser._id,
         role: newUser.role,
     });
 
     const refreshToken = await generateToken.generateRefreshToken({
-        email: newUser.email,
+        username: newUser.username,
         id: newUser._id,
         role: newUser.role,
     });
@@ -77,15 +71,15 @@ export const register = asyncWrapper(async (req, res) => {
 
 //login
 export const login = asyncWrapper(async (req, res) => {
-    const { email, password } = req.body;
+    const { username } = req.body;
 
-    if (!email || !password) {
+    if (!username) {
         return res
             .status(400)
             .json(httpResponse.badResponse(400, "data missing"));
     }
 
-    const oldUser = await User.findOne({ email: email });
+    const oldUser = await User.findOne({ username: username });
 
     if (!oldUser) {
         return res
@@ -93,21 +87,14 @@ export const login = asyncWrapper(async (req, res) => {
             .json(httpResponse.badResponse(400, "user not exists"));
     }
 
-    const matchedPassord = await bcrypt.compare(password, oldUser.password);
-    if (!matchedPassord) {
-        return res
-            .status(400)
-            .json(httpResponse.badResponse(400, "password mismatch"));
-    }
-
     const accessToken = await generateToken.generateAccessToken({
-        email: oldUser.email,
+        username: oldUser.username,
         id: oldUser._id,
         role: oldUser.role,
     });
 
     const refreshToken = await generateToken.generateRefreshToken({
-        email: oldUser.email,
+        username: oldUser.username,
         id: oldUser._id,
         role: oldUser.role,
     });

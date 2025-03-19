@@ -289,7 +289,7 @@ export const chat = asyncWrapper(async (req, res) => {
     const currentTime = moment();
 
     if (user === null) {
-        user = await User.findOne({ email: currentUser.email });
+        user = await User.findOne({ username: currentUser.username });
     }
 
     if (chatStartedTime === null) {
