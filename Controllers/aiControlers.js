@@ -11,6 +11,7 @@ import { asyncWrapper } from "../middlewares/asyncWrapper.js";
 //utils
 import * as httpResponse from "../utils/httpRespone.js";
 const AI_API = "https://aibot.alem-mojeeb.online/flaskpy/teacher";
+// const AI_API = "https://fd6c-213-139-63-106.ngrok-free.app/flaskpy/teacher";
 
 let chatStartedTime = null;
 let chatStartedTimePlus15Min = null;
@@ -59,11 +60,6 @@ async function axiosRequest(data) {
         return false;
     }
 }
-
-const readJsonTranscript = async (file) => {
-    const data = await fs.readFile(file, "utf8");
-    return JSON.parse(data);
-};
 
 export const getAllCommands = asyncWrapper(async (req, res) => {
     const commands = await Ai.find({}, { __v: false });
@@ -292,6 +288,33 @@ export const chat = asyncWrapper(async (req, res) => {
         user = await User.findOne({ username: currentUser.username });
     }
 
+    if (audioAsFile === null) {
+        const userAchs = await User.findById(user._id).populate("achievments");
+
+        let userAchievment = null;
+        userAchs.achievments.forEach((a) => {
+            if (a.activity === activity) {
+                userAchievment = a;
+            }
+        });
+
+        const startResponse = await axiosRequest({
+            user: user.username,
+            question: null,
+            status: "start",
+            command: command,
+            achievmentPercentage: JSON.stringify(userAchievment.percent),
+        });
+
+        return res.status(200).json(
+            httpResponse.goodResponse(200, {
+                audioMessage: startResponse.audio,
+                status: "ok",
+                percent: Number(startResponse.achievmentPercentage),
+            })
+        );
+    }
+
     if (chatStartedTime === null) {
         chatStartedTime = moment();
         chatStartedTimePlus15Min = chatStartedTime.clone().add(15, "minutes");
@@ -312,7 +335,7 @@ export const chat = asyncWrapper(async (req, res) => {
             question: null,
             status: "start",
             command: command,
-            achievmentPercentage: userAchievment.percent,
+            achievmentPercentage: JSON.stringify(userAchievment.percent),
         });
 
         return res.status(200).json(
@@ -344,7 +367,7 @@ export const chat = asyncWrapper(async (req, res) => {
                 question: null,
                 status: "end",
                 command: command,
-                achievmentPercentage: userAchievment.percent,
+                achievmentPercentage: JSON.stringify(userAchievment.percent),
             });
 
             await editAchievment(
@@ -366,12 +389,14 @@ export const chat = asyncWrapper(async (req, res) => {
 
         const startOfCurrentDay = moment().startOf("day");
         if (startOfCurrentDay.isAfter(startOfChatDay)) {
-            chatStartedTime = moment();
-            chatStartedTimePlus15Min = chatStartedTime
-                .clone()
-                .add(15, "minutes");
-            startOfChatDay = chatStartedTime.clone().startOf("day");
-            sentEndToPython = false;
+            if (audioAsFile !== null) {
+                chatStartedTime = moment();
+                chatStartedTimePlus15Min = chatStartedTime
+                    .clone()
+                    .add(15, "minutes");
+                startOfChatDay = chatStartedTime.clone().startOf("day");
+                sentEndToPython = false;
+            }
 
             const userAchs = await User.findById(user._id).populate(
                 "achievments"
@@ -389,7 +414,7 @@ export const chat = asyncWrapper(async (req, res) => {
                 question: null,
                 status: "start",
                 command: command,
-                achievmentPercentage: userAchievment.percent,
+                achievmentPercentage: JSON.stringify(userAchievment.percent),
             });
 
             return res.status(200).json(
@@ -415,7 +440,7 @@ export const chat = asyncWrapper(async (req, res) => {
                 httpResponse.goodResponse(200, {
                     audioMessage: null,
                     status: "timeout",
-                    percent: Number(userAchievment.percent),
+                    percent: JSON.stringify(userAchievment.percent),
                 })
             );
         }
