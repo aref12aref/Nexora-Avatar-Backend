@@ -21,7 +21,7 @@ mongoose
 
 // build the server
 const app = express();
-app.use(express.json({limit: 1000000}));
+app.use(express.json({ limit: 1000000000 }));
 app.use(cors());
 
 const PORT = process.env.PORT || 4000;

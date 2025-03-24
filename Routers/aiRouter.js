@@ -1,6 +1,5 @@
 //modules
 import express from "express";
-import multer from "multer";
 //controlers
 import * as aiControlers from "../Controllers/aiControlers.js";
 // middlewares
@@ -9,10 +8,6 @@ import { verifyRefreshToken } from "../middlewares/verifyRefreshToken.js";
 //utils
 import { allowedTo } from "../middlewares/allowedTo.js";
 import { userRoles } from "../utils/userRols.js";
-
-// receive audio
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
 
 //routes
 const router = express.Router();
@@ -52,7 +47,6 @@ router
     .post(
         verifyToken,
         verifyRefreshToken,
-        // upload.single("audio"),
         aiControlers.chat
     );
 
