@@ -20,6 +20,7 @@ let sentEndToPython = false;
 let user = null;
 let currentUserAch = null;
 let currentActivity = null;
+let currentCommand = null;
 
 // helpers functions
 async function editAchievment(
@@ -300,7 +301,12 @@ export const chat = asyncWrapper(async (req, res) => {
         user = await User.findOne({ username: currentUser.username });
     }
 
-    if (!currentUserAch || !currentActivity || currentActivity !== activity) {
+    if (
+        !currentUserAch ||
+        !currentActivity ||
+        currentActivity !== activity ||
+        !currentCommand
+    ) {
         const userAchs = await User.findById(user._id).populate("achievments");
 
         userAchs.achievments.forEach((a) => {
@@ -310,6 +316,7 @@ export const chat = asyncWrapper(async (req, res) => {
         });
 
         currentActivity = activity;
+        currentCommand = command;
     }
 
     if (audioAsFile === null) {
@@ -317,7 +324,7 @@ export const chat = asyncWrapper(async (req, res) => {
             user: user.username,
             question: null,
             status: "start",
-            command: command,
+            command: currentCommand,
             achievmentPercentage: JSON.stringify(currentUserAch.percent),
         });
 
@@ -352,7 +359,7 @@ export const chat = asyncWrapper(async (req, res) => {
             user: user.username,
             question: null,
             status: "start",
-            command: command,
+            command: currentCommand,
             achievmentPercentage: JSON.stringify(currentUserAch.percent),
         });
 
@@ -385,7 +392,7 @@ export const chat = asyncWrapper(async (req, res) => {
                 user: user.username,
                 question: null,
                 status: "end",
-                command: command,
+                command: currentCommand,
                 achievmentPercentage: JSON.stringify(currentUserAch.percent),
             });
 
@@ -433,7 +440,7 @@ export const chat = asyncWrapper(async (req, res) => {
                 user: user.username,
                 question: null,
                 status: "start",
-                command: command,
+                command: currentCommand,
                 achievmentPercentage: JSON.stringify(currentUserAch.percent),
             });
 
@@ -472,6 +479,7 @@ export const chat = asyncWrapper(async (req, res) => {
         question: audioAsFile,
         status: "talk",
         achievmentPercentage: null,
+        command: currentCommand,
     });
 
     if (!talkResponse) {
