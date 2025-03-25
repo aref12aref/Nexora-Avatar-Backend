@@ -18,6 +18,9 @@ const UsersSchema = mongoose.Schema({
             ref: "Achievment",
         },
     ],
+    lastSessionStart: {
+        type: String,
+    },
     token: {
         type: String,
         unique: true,
