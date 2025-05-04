@@ -14,10 +14,6 @@ const AI_API = "https://aibot.alem-mojeeb.online/flaskpy/teacher";
 
 let chatStartedTime = null;
 let sentEndToPython = false;
-let user = null;
-let currentUserAch = null;
-let currentActivity = null;
-let currentCommand = null;
 
 // helpers functions
 async function editAchievment(
@@ -25,12 +21,10 @@ async function editAchievment(
     activity,
     status,
     achievmentPercentage,
-    user
+    userAchs
 ) {
-    const userAchs = await User.findById(user._id).populate("achievments");
-
     let userAchievment = null;
-    userAchs.achievments.forEach((a) => {
+    userAchs.forEach((a) => {
         if (a.activity === activity) {
             userAchievment = a;
         }
@@ -279,12 +273,14 @@ export const chat = asyncWrapper(async (req, res) => {
     const activity = req.body.activity;
     const currentUser = req.currentUser;
 
-    const user = await User.findOne({ username: currentUser.username });
+    const user = await User.findOne({
+        username: currentUser.username,
+    }).populate("achievments");
 
-    const userAchs = await User.findById(user._id).populate("achievments");
+    const userAchs = user.achievments;
 
     let currentUserAch = null;
-    userAchs.achievments.forEach((a) => {
+    userAchs.forEach((a) => {
         if (a.activity === activity) {
             currentUserAch = a;
         }
@@ -347,10 +343,6 @@ export const chat = asyncWrapper(async (req, res) => {
     const lastSessionStart = new Date(user.lastSessionStart);
     const currentSessionStart = new Date(user.currentSessionStart);
 
-    console.log("===lastSessionStart1===", lastSessionStart);
-    console.log("===currentSessionStart1===", currentSessionStart);
-    console.log("===different1===", now - currentSessionStart);
-    console.log("===now1===", now, "\n");
     // new day
     if (now.getTime() - lastSessionStart.getTime() >= 24 * 60 * 60 * 1000) {
         user.lastSessionStart = now;
@@ -358,11 +350,6 @@ export const chat = asyncWrapper(async (req, res) => {
         await user.save();
         sentEndToPython = false;
     }
-
-    console.log("===lastSessionStart2===", lastSessionStart);
-    console.log("===currentSessionStart2===", currentSessionStart);
-    console.log("===different2===", now - currentSessionStart);
-    console.log("===now2===", now, "\n");
 
     // can talk (still in 15 min)
     if (now.getTime() <= currentSessionStart.getTime() + 15 * 60 * 1000) {
@@ -391,7 +378,7 @@ export const chat = asyncWrapper(async (req, res) => {
             activity,
             talkResponse.status,
             talkResponse.achievmentPercentage,
-            user
+            userAchs
         );
 
         return res.status(200).json(
@@ -432,7 +419,7 @@ export const chat = asyncWrapper(async (req, res) => {
             activity,
             endingResponse.status,
             endingResponse.achievmentPercentage,
-            user
+            userAchs
         );
     }
 
@@ -444,178 +431,3 @@ export const chat = asyncWrapper(async (req, res) => {
         })
     );
 });
-
-// export const chat = asyncWrapper(async (req, res) => {
-//     const audioAsFile = req.body.audio;
-//     const command = req.body.command;
-//     const activity = req.body.activity;
-//     const currentUser = req.currentUser;
-
-//     // check data
-//     if (!activity || !command) {
-//         return res.status(200).json(
-//             httpResponse.goodResponse(200, {
-//                 audioMessage: null,
-//                 status: "error",
-//                 percent: Number(currentUserAch ? currentUserAch.percent : 0),
-//             })
-//         );
-//     }
-
-//     if (user === null || user.username !== currentUser.username) {
-//         user = await User.findOne({ username: currentUser.username });
-//     }
-
-//     // set helper variables
-//     if (
-//         !currentUserAch ||
-//         !currentActivity ||
-//         currentActivity !== activity ||
-//         !currentCommand ||
-//         currentCommand !== command
-//     ) {
-//         const userAchs = await User.findById(user._id).populate("achievments");
-
-//         userAchs.achievments.forEach((a) => {
-//             if (a.activity === activity) {
-//                 currentUserAch = a;
-//             }
-//         });
-
-//         currentActivity = activity;
-//         currentCommand = command;
-//     }
-
-//     // send start
-//     if (audioAsFile === null) {
-//         const startResponse = await axiosRequest({
-//             user: user.username,
-//             question: null,
-//             status: "start",
-//             command: currentCommand,
-//             achievmentPercentage: JSON.stringify(currentUserAch.percent),
-//         });
-
-//         if (!startResponse) {
-//             return res.status(200).json(
-//                 httpResponse.goodResponse(200, {
-//                     audioMessage: null,
-//                     status: "error",
-//                     percent: Number(
-//                         currentUserAch ? currentUserAch.percent : 0
-//                     ),
-//                 })
-//             );
-//         }
-
-//         return res.status(200).json(
-//             httpResponse.goodResponse(200, {
-//                 audioMessage: startResponse.audio,
-//                 status: "ok",
-//                 percent: Number(startResponse.achievmentPercentage),
-//             })
-//         );
-//     }
-
-//     const now = new Date();
-
-//     if (chatStartedTime === null) {
-//         chatStartedTime = now;
-//     }
-
-//     if (!user.lastSessionStart) {
-//         user.lastSessionStart = new Date();
-//         await user.save();
-//     }
-
-//     const lastSessionStart = new Date(user.lastSessionStart);
-
-//     // new day
-//     if (now - lastSessionStart >= 24 * 60 * 60 * 1000) {
-//         user.lastSessionStart = now;
-//         await user.save();
-//         sentEndToPython = false;
-//     }
-
-//     // can talk (still in 15 min)
-//     if (now < chatStartedTime + 15 * 60 * 1000) {
-//         const talkResponse = await axiosRequest({
-//             user: user.username,
-//             question: audioAsFile,
-//             status: "talk",
-//             achievmentPercentage: null,
-//             command: currentCommand,
-//         });
-
-//         if (!talkResponse) {
-//             return res.status(200).json(
-//                 httpResponse.goodResponse(200, {
-//                     audioMessage: null,
-//                     status: "error",
-//                     percent: Number(
-//                         currentUserAch ? currentUserAch.percent : 0
-//                     ),
-//                 })
-//             );
-//         }
-
-//         await editAchievment(
-//             talkResponse.summary,
-//             currentActivity,
-//             talkResponse.status,
-//             talkResponse.achievmentPercentage,
-//             chatStartedTime
-//         );
-
-//         return res.status(200).json(
-//             httpResponse.goodResponse(200, {
-//                 audioMessage: talkResponse.audio,
-//                 status: "ok",
-//                 percent: Number(talkResponse.achievmentPercentage),
-//             })
-//         );
-//     }
-
-//     // 15 min completed
-//     if (!sentEndToPython) {
-//         sentEndToPython = true;
-
-//         const endingResponse = await axiosRequest({
-//             user: user.username,
-//             question: null,
-//             status: "end",
-//             command: currentCommand,
-//             achievmentPercentage: JSON.stringify(currentUserAch.percent),
-//         });
-
-//         if (!endingResponse) {
-//             return res.status(200).json(
-//                 httpResponse.goodResponse(200, {
-//                     audioMessage: null,
-//                     status: "error",
-//                     percent: Number(
-//                         currentUserAch ? currentUserAch.percent : 0
-//                     ),
-//                 })
-//             );
-//         }
-
-//         await User.findByIdAndUpdate;
-
-//         await editAchievment(
-//             endingResponse.summary,
-//             currentActivity,
-//             endingResponse.status,
-//             endingResponse.achievmentPercentage,
-//             chatStartedTime
-//         );
-//     }
-
-//     return res.status(200).json(
-//         httpResponse.goodResponse(200, {
-//             audioMessage: null,
-//             status: "timeout",
-//             percent: Number(currentUserAch.percent),
-//         })
-//     );
-// });

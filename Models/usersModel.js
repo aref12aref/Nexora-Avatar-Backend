@@ -18,6 +18,9 @@ const UsersSchema = mongoose.Schema({
             ref: "Achievment",
         },
     ],
+    currentSessionStart: {
+        type: String,
+    },
     lastSessionStart: {
         type: String,
     },
